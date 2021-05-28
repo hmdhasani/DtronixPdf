@@ -24,10 +24,6 @@ namespace DtronixPdf
 
         public IntPtr Scan0 { get; }
 
-        public float Scale { get; }
-
-        public RectangleF Viewport { get; }
-
         public bool IsDisposed { get; private set; }
 
         /// <summary>
@@ -38,16 +34,12 @@ namespace DtronixPdf
         /// <param name="height"></param>
         /// <param name="dispatcher"></param>
         /// <param name="format"></param>
-        /// <param name="scale"></param>
-        /// <param name="viewport"></param>
         internal PdfBitmap(
-            FpdfBitmapT pdfBitmap, 
-            int width, 
-            int height, 
-            ThreadDispatcher dispatcher, 
-            PixelFormat format, 
-            float scale, 
-            RectangleF viewport)
+            FpdfBitmapT pdfBitmap,
+            int width,
+            int height,
+            ThreadDispatcher dispatcher,
+            PixelFormat format)
         {
             _pdfBitmap = pdfBitmap;
             _dispatcher = dispatcher;
@@ -55,8 +47,6 @@ namespace DtronixPdf
             Stride = fpdfview.FPDFBitmapGetStride(pdfBitmap);
             Height = height;
             Format = format;
-            Scale = scale;
-            Viewport = viewport;
             Width = width;
         }
 

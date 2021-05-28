@@ -1,10 +1,9 @@
-﻿using System;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Threading;
-using DtronixPdf.Dispatcher;
+﻿using DtronixPdf.Dispatcher;
 using DtronixPdf.Renderer.Dispatcher;
 using PDFiumCore;
+using System;
+using System.Drawing;
+using System.Drawing.Imaging;
 
 namespace DtronixPdf.Actions
 {
@@ -12,30 +11,21 @@ namespace DtronixPdf.Actions
     {
         public readonly FpdfPageT _pageInstance;
         private readonly float _scale;
-        private readonly RectangleF _viewport;
+        private readonly SizeF _size;
         private readonly RenderFlags _flags;
-        private readonly Color? _backgroundColor;
-        private readonly bool _includeAlpha;
-        private readonly CancellationToken _cancellationToken;
         private readonly ThreadDispatcher _dispatcher;
         private FpdfBitmapT _bitmap;
 
         public RenderPageAction(ThreadDispatcher dispatcher,
             FpdfPageT pageInstance,
             float scale,
-            RectangleF viewport,
-            RenderFlags flags,
-            Color? backgroundColor,
-            bool includeAlpha,
-            CancellationToken cancellationToken)
+            SizeF size,
+            RenderFlags flags)
         {
             _pageInstance = pageInstance;
             _scale = scale;
-            _viewport = viewport;
+            _size = size;
             _flags = flags;
-            _backgroundColor = backgroundColor;
-            _includeAlpha = includeAlpha;
-            _cancellationToken = cancellationToken;
             _dispatcher = dispatcher;
         }
 
@@ -43,27 +33,20 @@ namespace DtronixPdf.Actions
         {
             try
             {
-                _cancellationToken.ThrowIfCancellationRequested();
+                var width = (int)Math.Round(_size.Width * _scale);
+                var height = (int)Math.Round(_size.Height * _scale);
 
                 _bitmap = fpdfview.FPDFBitmapCreateEx(
-                    (int) _viewport.Size.Width,
-                    (int) _viewport.Size.Height,
-                    (int) (_includeAlpha ? FPDFBitmapFormat.BGRA : FPDFBitmapFormat.BGR),
+                    width,
+                    height,
+                    (int)FPDFBitmapFormat.BGRA,
                     IntPtr.Zero,
                     0);
 
                 if (_bitmap == null)
                     throw new Exception("failed to create a bitmap object");
 
-                _cancellationToken.ThrowIfCancellationRequested();
-
-                if (_backgroundColor.HasValue)
-                {
-                    fpdfview.FPDFBitmapFillRect(
-                        _bitmap, 0, 0, (int) _viewport.Size.Width, (int) _viewport.Size.Height, (uint) _backgroundColor.Value.ToArgb());
-
-                    _cancellationToken.ThrowIfCancellationRequested();
-                }
+                fpdfview.FPDFBitmapFillRect(_bitmap, 0, 0, width, height, (uint)Color.White.ToArgb());
 
                 // |          | a b 0 |
                 // | matrix = | c d 0 |
@@ -75,27 +58,22 @@ namespace DtronixPdf.Actions
                 matrix.B = 0;
                 matrix.C = 0;
                 matrix.D = _scale;
-                matrix.E = -_viewport.X;
-                matrix.F = -_viewport.Y;
+                matrix.E = 0;
+                matrix.F = 0;
 
                 clipping.Left = 0;
-                clipping.Right = _viewport.Size.Width;
+                clipping.Right = width;
                 clipping.Bottom = 0;
-                clipping.Top = _viewport.Size.Height;
+                clipping.Top = height;
 
-                fpdfview.FPDF_RenderPageBitmapWithMatrix(_bitmap, _pageInstance, matrix, clipping, (int) _flags);
-
-                // Cancellation check;
-                _cancellationToken.ThrowIfCancellationRequested();
+                fpdfview.FPDF_RenderPageBitmapWithMatrix(_bitmap, _pageInstance, matrix, clipping, (int)_flags);
 
                 return new PdfBitmap(
                     _bitmap,
-                    (int) _viewport.Size.Width,
-                    (int) _viewport.Size.Height,
+                    width,
+                    height,
                     _dispatcher,
-                    _includeAlpha ? PixelFormat.Format32bppArgb : PixelFormat.Format24bppRgb,
-                    _scale,
-                    _viewport);
+                    PixelFormat.Format32bppArgb);
             }
             catch (OperationCanceledException)
             {

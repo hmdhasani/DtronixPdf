@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using DtronixPdf.Actions;
+﻿using DtronixPdf.Actions;
 using DtronixPdf.Dispatcher;
-using DtronixPdf.Renderer.Dispatcher;
 using PDFiumCore;
+using System;
+using System.Drawing;
+using System.Threading.Tasks;
 
 namespace DtronixPdf
 {
@@ -59,65 +55,22 @@ namespace DtronixPdf
 
             return page;
         }
-        /*
-        public Task<PdfBitmap> Render(RenderFlags flags)
-        {
-            return Render(flags, 1);
-        }
-
-        public Task<PdfBitmap> Render(RenderFlags flags, float scale)
-        {
-            return Render(flags, scale, new Rectangle(0, 0, (int) (Size.Width * scale), (int) (Size.Height * scale)));
-        }
-
-
-        public Task<PdfBitmap> Render(RenderFlags flags, float scale, RectangleF viewport)
-        {
-            return Render(flags, scale, viewport, false, Color.White);
-        }
-        
-        public Task<PdfBitmap> Render(
-            RenderFlags flags,
-            float scale,
-            Viewport viewport,
-            bool alpha,
-            Color? backgroundColor)
-        {
-            var translatedRectangle = new RectangleF(
-                (int) ((Size.Width / 2 - viewport.Size.Width / 2 + viewport.Origin.X) * scale + viewport.Size.Width / 2 * (scale - 1)),
-                (int) ((Size.Height / 2 - viewport.Size.Height / 2 - viewport.Origin.Y) * scale + viewport.Size.Height / 2 * (scale - 1)),
-                viewport.Size.Width,
-                viewport.Size.Height);
-
-            return Render(flags, scale, translatedRectangle, alpha, backgroundColor);
-        }
-        */
 
         public async Task<PdfBitmap> Render(
             RenderFlags flags,
             float scale,
-            RectangleF viewport,
-            bool alpha,
-            Color? backgroundColor,
-            CancellationToken cancellationToken,
             DispatcherPriority priority)
         {
             if (_isDisposed)
                 throw new ObjectDisposedException(nameof(PdfPage));
-
-            if (viewport.IsEmpty)
-                throw new ArgumentException("Viewport is empty", nameof(viewport));
 
             return await _dispatcher.QueueWithResult(
                 new RenderPageAction(
                     _dispatcher,
                     _pageInstance,
                     scale,
-                    viewport,
-                    flags,
-                    backgroundColor,
-                    alpha,
-                    cancellationToken),
+                    Size,
+                    flags),
                 priority);
         }
 
